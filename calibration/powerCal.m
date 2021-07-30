@@ -8,6 +8,8 @@ function powerCal
 
 %% initialize
 global lsr
+lsr = lsrCtrlParams;
+nidaqComm('init')
 
 rootdir  = [lsr.rootdir 'calibration\'];
 savepath = [lsr.savepathroot 'calibration\'];
@@ -54,9 +56,9 @@ if ~isempty(dir(fn))
 end
 
 % parameters
-vmin = 0; % minimal voltage controlling laser power
-vmax = 5; % maximal voltage controlling laser power
-vstp = 1; % voltage steps for calibration
+vmin = 2; % minimal voltage controlling laser power
+vmax = 5.5; % maximal voltage controlling laser power
+vstp = 0.5; % voltage steps for calibration
 dur  = 4; % in sec
 calDate = datestr(datetime,'yymmdd_HHMMSS');
 
@@ -76,6 +78,9 @@ lsrPower = zeros(size(vPower));
 RecordPhotoDiodeVoltages=zeros(length(vPower),3);
 
 % increase voltage progressively and measure input
+% nidaqAOPulse
+ReadPhotodiode = 0;
+ReadPowerMeter = 1;
 for ii = 1:length(vPower)
   
   % measure for "dur" sec
@@ -122,10 +127,10 @@ end
 %% plot results, try to fit line, save
 h1=figure;
 if ReadPowerMeter
-  p = polyfit(vPower,lsrPower,1);
-  a = p(1); b = p(2);
+  p = polyfit(vPower,lsrPower,2);
+  a = p(1); b = p(2); c = p(3);
   xaxis = vmin:.01:vmax;
-  plot(vPower,lsrPower,'ko');  hold on; plot(xaxis,a.*xaxis+b,'r-');
+  plot(vPower,lsrPower,'ko');  hold on; plot(xaxis,a.*xaxis.^2+b * xaxis + c,'r-');
   text(1,15,['a=',num2str(a),';   b=',num2str(b)]);
   %the relation control Voltage to LaserPower is
   PowerCalibration.ControlVoltageToLaserPower.slope=p(1);

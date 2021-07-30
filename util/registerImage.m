@@ -23,8 +23,8 @@ im  = fliplr(im);
 ref = fliplr(ref);
 
 %% normalize images
-im  = im-mean(mean(im))./std(std(double(im)));
-ref = ref-mean(mean(ref))./std(std(double(ref)));
+% im  = (im-mean(mean(im)))./std(std(double(im)));
+% ref = (ref-mean(mean(ref)))./std(std(double(ref)));
 
 %% use only relevant subregion?
 if subImFlag
@@ -38,8 +38,8 @@ end
 
 %% use rigid transformation to go from current image im to reference image
 [optimizer,metric] = imregconfig('multimodal');
-regim = imregister(im,ref,'rigid',optimizer,metric);
-tform = imregtform(im,ref,'rigid',optimizer,metric);
+regim = imregister(im(:,:,1),ref(:,:,1),'rigid',optimizer,metric);
+tform = imregtform(im(:,:,1),ref(:,:,1),'rigid',optimizer,metric);
 
 offset.angle   = rad2deg(asin(tform.T(2,1)));
 offset.xtransl = tform.T(3,1)/lsr.pxlPerMM;

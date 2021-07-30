@@ -8,6 +8,8 @@ function laserCtrlGUI
 %% INITIALIZE VARIABLES
 global lsr obj
 
+NET.addAssembly('C:\Program Files\Thorlabs\Scientific Imaging\DCx Camera Support\Develop\DotNet\uc480DotNet.dll');
+
 lsr     = lsrCtrlParams; % get class object with laser parameters
 lsr     = calculateP_on(lsr); % enforce max prob./location
 lsr     = getCalValues(lsr); % get calibration parameters and quick-check laser power calibration
@@ -148,7 +150,7 @@ end
 function setZero_callback(~,event)
 global obj lsr
 if get(obj.setZero,'Value') == true
-  lsr.refPxl = ginput(1);
+  lsr.refPxl = ginputax(gca, 1);
   hold on; plot(lsr.refPxl(1),lsr.refPxl(2),'m+','markersize',10)
   lsr  = computeOuputData(lsr);
   updateConsole('set new reference pixel')

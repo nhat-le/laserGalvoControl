@@ -17,7 +17,7 @@ end
 vlsr = lsr.Vlsr;
 
 
-ClickedPosition = round(ginput(1));
+ClickedPosition = round(ginputax(gca, 1));
 
 if  ClickedPosition(1)>= 1             && ...
     ClickedPosition(1)<= obj.vidRes(1) && ...
@@ -48,10 +48,11 @@ if  ClickedPosition(1)>= 1             && ...
       dataout(LaserRigParameters.galvoCh(1)) = NewGalvoVoltage(1);
       dataout(LaserRigParameters.galvoCh(2)) = NewGalvoVoltage(2);
       nidaqAOPulse('aoPulse',dataout);
-      pause(0.10);
-      trigger(obj.vid);
-      pause(0.05);
-      dataRead = getdata(obj.vid, obj.vid.FramesAvailable, 'uint16');
+%       pause(0.10);
+%       trigger(obj.vid);
+%       pause(0.05);
+%       dataRead = getdata(obj.vid, obj.vid.FramesAvailable, 'uint16');
+      dataRead = thor_single_frame(obj.cam, obj.MemId, obj.camWidth, obj.camHeight, obj.Bits);
       figure(fh);
       imagesc(dataRead(:,:,:,1)); colormap gray;
   end

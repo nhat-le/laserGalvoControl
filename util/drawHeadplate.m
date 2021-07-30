@@ -1,4 +1,5 @@
 function drawHeadplate(impath,mouseID)
+global lsr
 
 % drawHeadplate(impath,mouseID)
 % load image for mouse _mouseID_, and directory impath, plots it and
@@ -13,4 +14,5 @@ headplate        = roipoly;
 headplateContour = bwperim(headplate);
 close(fh)
 
+lsr.headplateOutline = headplateContour;
 save([impath mouseID '_headplate.mat'],'headplateContour','headplate')

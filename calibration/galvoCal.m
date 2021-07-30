@@ -5,6 +5,8 @@ function galvoCal
 % This function was written mostly by Stephan Thiberge, modified by Lucas Pinto
 
 global obj lsr
+lsr = lsrCtrlParams;
+nidaqComm('init');
 commandwindow;
 fprintf('calibrating galvos...\n')
 
@@ -28,6 +30,7 @@ calDate       = datestr(datetime,'yymmdd_HHMMSS');
 
 % create video object
 imaqreset;
+LaserRigParams = LaserRigParameters;
 obj.vid = videoinput(LaserRigParams.camName, 1, LaserRigParams.camImageType);
 triggerconfig(obj.vid, 'manual');
 obj.vid.FramesPerTrigger = 1;
@@ -133,7 +136,7 @@ close(h)
 %% 2-Create map of laser beam positions
 Beam = [];
 for ii = 1:numFrames
-     MaxIntensityOfFrame(ii) = max(max(data(:,:,:,ii)));
+     MaxIntensityOfFrame(ii,:) = max(max(data(:,:,:,ii)));
 end
 IntensityOfSpot = max(MaxIntensityOfFrame(:));
 
@@ -167,6 +170,8 @@ end
 %% linear fit
 BeamMM          = Beam./pxlPerMM;
 galvoCal.BeamMM = BeamMM;
+
+Beam = rand(size(Beam));
 
 maxVX = 1.3; minVX = -1.4;
 maxVY = 1.5; minVY = -1.5;

@@ -1,10 +1,9 @@
 #include <mex.h>
-#include "C:\Program Files (x86)\National Instruments\NI-DAQ\DAQmx ANSI C Dev\include\NIDAQmx.h"
+#include <NIDAQmx.h>
 
 #include <iostream>
 #include <chrono>
 #include <thread>
-#include <string.h>
 
 
 //-----------------------------------------------------------------------------
@@ -72,7 +71,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 		char                      config[100];
 		for (int iChannel = 0; iChannel < numChannels; ++iChannel) {
-			sprintf(config, "PXI1Slot3/ai%d", static_cast<int>(channel[iChannel]));
+			sprintf(config, "Dev%d/ai%d", device, static_cast<int>(channel[iChannel]));
 			DAQmxErrChk("nidaqAIread:init", DAQmxCreateAIVoltageChan(AIreadTask, config, "", DAQmx_Val_Diff, -10.0, 10.0, DAQmx_Val_Volts, ""));
 			//DAQmxErrChk("nidaqAIread:init", DAQmxCfgSampClkTiming(AIreadTask, "", 10000.0, DAQmx_Val_Rising, DAQmx_Val_FiniteSamps, numChannels));
 		}

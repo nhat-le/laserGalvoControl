@@ -5,8 +5,10 @@ function galvoCal2p1
 % This function was written mostly by Stephan Thiberge, modified by Lucas Pinto
 
 global obj lsr
+lsr = lsrCtrlParams;
 commandwindow;
 fprintf('calibrating galvos...\n')
+nidaqComm('init');
 
 % first save a copy of previous cal file (if any) by appending previous
 % date
@@ -27,17 +29,36 @@ saveCalImFlag = 0; % save calibration images? (boolean)
 calDate       = datestr(datetime,'yymmdd_HHMMSS');
 
 % create video object
-imaqreset;
-LaserRigParams = LaserRigParameters;
-obj.vid = videoinput(LaserRigParams.camName, 1, LaserRigParams.camImageType);
-triggerconfig(obj.vid, 'manual');
-obj.vid.FramesPerTrigger = 1;
-obj.vid.TriggerRepeat    = Inf;
-src.ExposureMode         = 'Manual';
-src.Exposure             = -20;
-src.FrameRate            = 20;
+% imaqreset;
+% LaserRigParams = LaserRigParameters;
+% obj.vid = videoinput(LaserRigParams.camName, 1, LaserRigParams.camImageType);
+% triggerconfig(obj.vid, 'manual');
+% obj.vid.FramesPerTrigger = 1;
+% obj.vid.TriggerRepeat    = Inf;
+% src.ExposureMode         = 'Manual';
+% src.Exposure             = -20;
+% src.FrameRate            = 20;
+% 
+% start(obj.vid);
+% Create video object
+NET.addAssembly('C:\Program Files\Thorlabs\Scientific Imaging\DCx Camera Support\Develop\DotNet\uc480DotNet.dll');
+obj.cam = uc480.Camera;
 
-start(obj.vid);
+obj.cam.Init(0);
+
+obj.cam.Display.Mode.Set(uc480.Defines.DisplayMode.DiB);
+obj.cam.PixelFormat.Set(uc480.Defines.ColorMode.RGB8Packed);
+obj.cam.Trigger.Set(uc480.Defines.TriggerMode.Software);
+
+% figure;
+[status,obj.MemId] = obj.cam.Memory.Allocate(true);
+if strcmp(status, 'NO_SUCCESS')
+    error('Error allocating memory...')
+end
+
+[~,obj.camWidth,obj.camHeight,obj.Bits,~] = obj.cam.Memory.Inquire(obj.MemId);
+obj.vidRes = [obj.camWidth, obj.camHeight];
+
 
 %% PREVIEW 
 % visualize laser spot and set-up proper laser intensity for calibration
@@ -47,32 +68,38 @@ dataout(LaserRigParameters.lsrSwitchCh) = 5;
 dataout(LaserRigParameters.lsrWaveCh)   = .001; % very low power must be used for accurate localization of beam
 nidaqAOPulse('aoPulse',dataout);
 
-hImage                                  = preview(obj.vid);
-handleAxes                              = ancestor(hImage,'axes');
-set(handleAxes,'XDir','reverse');
+% Previewing the laser spot
+Data = thor_single_frame(obj.cam, obj.MemId, obj.camWidth, obj.camHeight, obj.Bits);
+hImage = imshow(Data);
+% hImage                                  = preview(obj.vid);
+% handleAxes                              = ancestor(hImage,'axes');
+% set(handleAxes,'XDir','reverse');
 
 pause(1)
-
+close(gcf);
 %% Acquire the images for each position of the laser
 
-stoppreview(obj.vid);
-closepreview;
+% stoppreview(obj.vid);
+% closepreview;
 
 % video resolution for pxl-mm conversion
-if ~isfield(obj,'vidRes') || (isfield(obj,'vidRes') && isempty(obj.vidRes))
-    obj.vidRes = get(obj.vid, 'VideoResolution');
-end
-resX = obj.vidRes(1); resY = obj.vidRes(2);
+% if ~isfield(obj,'vidRes') || (isfield(obj,'vidRes') && isempty(obj.vidRes))
+%     obj.vidRes = get(obj.vid, 'VideoResolution');
+% end
+% resX = obj.vidRes(1); resY = obj.vidRes(2);
+resX =  obj.camWidth; resY = obj.camHeight;
 
-try start(obj.vid); end
+% try start(obj.vid); end
 
-GridSizeX    = 11;
-GridSizeY    = 11;
+% GridSizeX    = 11;
+% GridSizeY    = 11;
+GridSizeX = 5;
+GridSizeY = 5;
 VxMin        = -1.5; VxMax = 1.5;
 VyMin        = -1.0; VyMax = 1.0;
 data         = [];
 GalvoVoltage = [];
-dataRead     = getdata(obj.vid, obj.vid.FramesAvailable, 'uint16'); %flush buffer
+% dataRead     = getdata(obj.vid, obj.vid.FramesAvailable, 'uint16'); %flush buffer
 
 h = figure; 
 for iX = 1:GridSizeX
@@ -86,11 +113,12 @@ for iX = 1:GridSizeX
       nidaqAOPulse('aoPulse',dataout);
 
       pause(0.2)
-      trigger(obj.vid);
+%       trigger(obj.vid);
+      dataRead = thor_single_frame(obj.cam, obj.MemId, obj.camWidth, obj.camHeight, obj.Bits);
       pause(0.2);
-      dataRead = getdata(obj.vid, obj.vid.FramesAvailable, 'uint16');
+%       dataRead = getdata(obj.vid, obj.vid.FramesAvailable, 'uint16');
       figure(h), imagesc(dataRead(:,:,:,1)); colormap gray; axis image; set(gca,'XDir','reverse');
-      title('Different positions of the beam are being scanned.')
+      title(sprintf('Different positions of the beam are being scanned: %d, %d', iX, iY))
       if iX==1 && iY==1
           data                  = dataRead(:,:,:,1);
           GalvoVoltage          = [Vx,Vy];
@@ -101,7 +129,7 @@ for iX = 1:GridSizeX
 
   end
 end
-stop(obj.vid);
+% stop(obj.vid);
 nidaqAOPulse('aoPulse',[0 0 0 0]);
 
 %% write images to tif stack?
@@ -295,20 +323,22 @@ dataout(LaserRigParameters.lsrWaveCh)   = 0.001;
 nidaqAOPulse('aoPulse',dataout);
 
 h4 = figure; 
-start(obj.vid);
-pause(0.05)
-trigger(obj.vid);
-pause(0.05);
-dataRead = getdata(obj.vid, obj.vid.FramesAvailable, 'uint16');
+% start(obj.vid);
+% pause(0.05)
+% trigger(obj.vid);
+% pause(0.05);
+dataRead = thor_single_frame(obj.cam, obj.MemId, obj.camWidth, obj.camHeight, obj.Bits);
+%getdata(obj.vid, obj.vid.FramesAvailable, 'uint16');
 figure(h4), imagesc(dataRead(:,:,:,1)); 
 colormap gray; axis image; set(gca,'XDir','reverse');
 title('Calibration test - Click a new location for the beam')
 
+lsr.galvoTform = galvoCal.tform;
 for ii=1:10
   galvoClickControl('calibration',h4)
 end
 
-stop(obj.vid);
+% stop(obj.vid);
 close(h4)
 
 % park beam outside field of view

@@ -4,11 +4,11 @@ function obj = createVideoObject(obj)
 % creates video object for image registration / video streaming
 
 if isfield(obj,'vid'); delete(obj.vid); end
-
+LaserRigParams = LaserRigParameters;
 obj.vid                   = videoinput(LaserRigParams.camName, 1, LaserRigParams.camImageType);
 src                       = getselectedsource(obj.vid);
 src.ExposureMode          = 'Auto';
-src.FrameRate             = 10;
+src.FrameRate             = '10.0000';
 obj.vid.FramesPerTrigger  = 1;
 obj.vidRes                = get(obj.vid, 'VideoResolution');
 nBands                    = get(obj.vid, 'NumberOfBands');
