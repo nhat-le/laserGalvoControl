@@ -89,7 +89,7 @@ classdef lsrCtrlParams
     tcpObj
     varyPower       = 0                             % for experiments where power varies on a trial-by-trial basis
     varyPowerLs 	  = [.25 .5 1 2 4 8 12]; 
-    preSetOn        = false
+    preSetOn        = true
     presetLocDur
     presetCycleDur
     presetMaxDurMin

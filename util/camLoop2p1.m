@@ -49,7 +49,11 @@ while ~ stopL
   
     % get cam data 
 %     trigger(obj.vid);
-    dataRead = thor_single_frame(obj.cam, obj.MemId, obj.camWidth, obj.camHeight, obj.Bits);
+    if strcmp(obj.camtype, 'new')
+        dataRead = get_img_frame(obj.cam);
+    elseif strcmp(obj.camtype, 'DCx')
+        dataRead = thor_single_frame(obj.cam, obj.MemId, obj.camWidth, obj.camHeight, obj.Bits);
+    end
 
 %     dataRead    = getdata(obj.vid, obj.vid.FramesAvailable, 'uint8');
     obj.camData = dataRead(:,:,:,end);

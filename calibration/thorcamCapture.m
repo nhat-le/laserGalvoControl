@@ -3,8 +3,8 @@ cam = uc480.Camera;
 
 cam.Init(0);
 
-cam.Display.Mode.Set(uc480.Defines.DisplayMode.DiB);
-cam.PixelFormat.Set(uc480.Defines.ColorMode.RGB8Packed);
+% cam.Display.Mode.Set(uc480.Defines.DisplayMode.DiB);
+% cam.PixelFormat.Set(uc480.Defines.ColorMode.RGB8Packed);
 cam.Trigger.Set(uc480.Defines.TriggerMode.Software);
 
 figure;
@@ -12,7 +12,7 @@ figure;
 disp(status);
 
 [~,Width,Height,Bits,~] = cam.Memory.Inquire(MemId);
-for i = 1:100
+for i = 1:3
     
 %     cam.Acquisition.Capture
     cam.Acquisition.Freeze(uc480.Defines.DeviceParameter.Wait);
@@ -25,3 +25,5 @@ for i = 1:100
 
     imshow(Data);
 end
+
+cam.Exit;

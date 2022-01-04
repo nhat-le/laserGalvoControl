@@ -1,11 +1,18 @@
-function galvoCal2p1
 %% Mapping the XY Voltage values applied to the beam position in the camera FOV
 % go through different positions of the laser and measure the position on the image observed
 % 2D-Interpolate to get a continuous map of pixel-position vs voltage applied on the galvos.
 % This function was written mostly by Stephan Thiberge, modified by Lucas Pinto
 
 global obj lsr
-lsr = lsrCtrlParams;
+
+obj.camtype = 'new';
+
+if strcmp(obj.camtype, 'DCx')
+    waitTime = 0.2;
+else
+    waitTime = 1;
+end
+lsr = lsrCtrlParams;  
 commandwindow;
 fprintf('calibrating galvos...\n')
 nidaqComm('init');
@@ -41,24 +48,64 @@ calDate       = datestr(datetime,'yymmdd_HHMMSS');
 % 
 % start(obj.vid);
 % Create video object
-NET.addAssembly('C:\Program Files\Thorlabs\Scientific Imaging\DCx Camera Support\Develop\DotNet\uc480DotNet.dll');
-obj.cam = uc480.Camera;
+if strcmp(obj.camtype, 'DCx')
+    NET.addAssembly('C:\Program Files\Thorlabs\Scientific Imaging\DCx Camera Support\Develop\DotNet\uc480DotNet.dll');
+    obj.cam = uc480.Camera;
 
-obj.cam.Init(0);
+    obj.cam.Init(0);
 
-obj.cam.Display.Mode.Set(uc480.Defines.DisplayMode.DiB);
-obj.cam.PixelFormat.Set(uc480.Defines.ColorMode.RGB8Packed);
-obj.cam.Trigger.Set(uc480.Defines.TriggerMode.Software);
+    obj.cam.Display.Mode.Set(uc480.Defines.DisplayMode.DiB);
+    obj.cam.PixelFormat.Set(uc480.Defines.ColorMode.RGB8Packed);
+    obj.cam.Trigger.Set(uc480.Defines.TriggerMode.Software);
 
-% figure;
-[status,obj.MemId] = obj.cam.Memory.Allocate(true);
-if strcmp(status, 'NO_SUCCESS')
-    error('Error allocating memory...')
+    % figure;
+    [status,obj.MemId] = obj.cam.Memory.Allocate(true);
+    if strcmp(status, 'NO_SUCCESS')
+        error('Error allocating memory...')
+    end
+
+    [~,obj.camWidth,obj.camHeight,obj.Bits,~] = obj.cam.Memory.Inquire(obj.MemId);
+    obj.vidRes = [obj.camWidth, obj.camHeight];
+elseif strcmp(obj.camtype, 'new')
+
+    NET.addAssembly('C:\Users\MMM_3p1_SI\Documents\laserGalvoControl\pupilVBP\Thorlabs.TSI.TLCamera.dll');
+    disp('Dot NET assembly loaded.');
+
+    tlCameraSDK = Thorlabs.TSI.TLCamera.TLCameraSDK.OpenTLCameraSDK;
+
+    % Get serial numbers of connected TLCameras.
+    serialNumbers = tlCameraSDK.DiscoverAvailableCameras;
+    disp([num2str(serialNumbers.Count), ' camera was discovered.']);
+
+    % Open the first TLCamera using the serial number.
+    disp('Opening the first camera')
+    obj.cam = tlCameraSDK.OpenCamera(serialNumbers.Item(0), false);
+
+    obj.cam.ExposureTime_us = 25000;
+    obj.cam.Gain = 0;
+    obj.cam.BlackLevel = 5;
+
+    % ROI and Bin
+    roiAndBin = obj.cam.ROIAndBin;
+    roiAndBin.ROIOriginX_pixels = 0;
+    roiAndBin.ROIWidth_pixels = 1500;
+    roiAndBin.ROIOriginY_pixels = 0;
+    roiAndBin.ROIHeight_pixels = 1000;
+    roiAndBin.BinX = 1;
+    roiAndBin.BinY = 1;
+    obj.cam.ROIAndBin = roiAndBin;
+
+    % Set the FIFO frame buffer size. Default size is 1.
+    obj.cam.MaximumNumberOfFramesToQueue = 5;
+
+    disp('Starting continuous image acquisition.');
+    obj.cam.OperationMode = Thorlabs.TSI.TLCameraInterfaces.OperationMode.SoftwareTriggered;
+    obj.cam.FramesPerTrigger_zeroForUnlimited = 0;
+    obj.cam.TriggerPolarity = Thorlabs.TSI.TLCameraInterfaces.TriggerPolarity.ActiveHigh;
+    obj.cam.Arm;
+    obj.cam.IssueSoftwareTrigger;
+    maxPixelIntensity = double(2^obj.cam.BitDepth - 1);
 end
-
-[~,obj.camWidth,obj.camHeight,obj.Bits,~] = obj.cam.Memory.Inquire(obj.MemId);
-obj.vidRes = [obj.camWidth, obj.camHeight];
-
 
 %% PREVIEW 
 % visualize laser spot and set-up proper laser intensity for calibration
@@ -69,7 +116,11 @@ dataout(LaserRigParameters.lsrWaveCh)   = .001; % very low power must be used fo
 nidaqAOPulse('aoPulse',dataout);
 
 % Previewing the laser spot
-Data = thor_single_frame(obj.cam, obj.MemId, obj.camWidth, obj.camHeight, obj.Bits);
+if strcmp(obj.camtype, 'DCx')
+    Data = thor_single_frame(obj.cam, obj.MemId, obj.camWidth, obj.camHeight, obj.Bits);
+elseif strcmp(obj.camtype, 'new')
+    Data = get_img_frame(obj.cam);
+end
 hImage = imshow(Data);
 % hImage                                  = preview(obj.vid);
 % handleAxes                              = ancestor(hImage,'axes');
@@ -87,7 +138,9 @@ close(gcf);
 %     obj.vidRes = get(obj.vid, 'VideoResolution');
 % end
 % resX = obj.vidRes(1); resY = obj.vidRes(2);
-resX =  obj.camWidth; resY = obj.camHeight;
+% resX =  obj.camWidth; resY = obj.camHeight;
+resX = size(Data, 2); resY = size(Data, 1);
+obj.vidRes = [resX, resY];
 
 % try start(obj.vid); end
 
@@ -95,8 +148,10 @@ resX =  obj.camWidth; resY = obj.camHeight;
 % GridSizeY    = 11;
 GridSizeX = 5;
 GridSizeY = 5;
-VxMin        = -1.5; VxMax = 1.5;
-VyMin        = -1.0; VyMax = 1.0;
+% VxMin        = -1.5; VxMax = 1.5;
+% VyMin        = -1.0; VyMax = 1.0;
+VxMin = -0.2; VxMax = 0.2;
+VyMin = -0.2; VyMax = 0.2;
 data         = [];
 GalvoVoltage = [];
 % dataRead     = getdata(obj.vid, obj.vid.FramesAvailable, 'uint16'); %flush buffer
@@ -112,10 +167,15 @@ for iX = 1:GridSizeX
 
       nidaqAOPulse('aoPulse',dataout);
 
-      pause(0.2)
+      pause(waitTime)
 %       trigger(obj.vid);
-      dataRead = thor_single_frame(obj.cam, obj.MemId, obj.camWidth, obj.camHeight, obj.Bits);
-      pause(0.2);
+      if strcmp(obj.camtype, 'DCx')
+        dataRead = thor_single_frame(obj.cam, obj.MemId, obj.camWidth, obj.camHeight, obj.Bits);
+      elseif strcmp(obj.camtype, 'new')
+        dataRead = get_img_frame(obj.cam);
+      end
+%       dataRead = thor_single_frame(obj.cam, obj.MemId, obj.camWidth, obj.camHeight, obj.Bits);
+      pause(waitTime);
 %       dataRead = getdata(obj.vid, obj.vid.FramesAvailable, 'uint16');
       figure(h), imagesc(dataRead(:,:,:,1)); colormap gray; axis image; set(gca,'XDir','reverse');
       title(sprintf('Different positions of the beam are being scanned: %d, %d', iX, iY))
@@ -166,11 +226,14 @@ for ii = 1:numFrames
 end
 IntensityOfSpot = max(MaxIntensityOfFrame(:));
 
+figure;
 for ii = 1:numFrames
+    cla;
     disp(['location ',num2str(ii),' out of ',num2str(numFrames)])
     
     % acquire image and detect beam
-    BW         = im2bw(data(:,:,:,ii), 0.3);
+%     BW         = im2bw(data(:,:,:,ii), 0.3);
+    BW         = im2bw(data(:,:,:,ii), 0.01);
     structDisk = strel('disk', 5);
     bw2        = imdilate(BW, structDisk);
     bw2        = imclearborder(bw2);
@@ -185,19 +248,30 @@ for ii = 1:numFrames
     end
     
     % calculate beam position in the image
-    if length(STATS)~=1 || MaxIntensityOfFrame(ii)<(.50)*IntensityOfSpot
-        disp(['Ambiguity at frame ',num2str(ii),'. Dropping it.']);
-        Beam(ii,:)=[0 0];
-    else
-        Beam(ii,:)= STATS.Centroid;
-    end
+%     if length(STATS)~=1 || MaxIntensityOfFrame(ii)<(.50)*IntensityOfSpot
+%         disp(['Ambiguity at frame ',num2str(ii),'. Dropping it.']);
+%         Beam(ii,:)=[0 0];
+%     else
+%         Beam(ii,:)= STATS.Centroid;
+%         imshow(BW)
+%         hold on
+%         scatter(STATS.Centroid(1), STATS.Centroid(2), 200, 'rx')
+%         pause(2);
+%     end
+
+    imagesc(data(:,:,:,ii))
+    hold on
+    [xpos, ypos] = ginput(1);
+    Beam(ii,:) = [xpos, ypos];
+    
+    
 end
 
 %% linear fit
 BeamMM          = Beam./pxlPerMM;
 galvoCal.BeamMM = BeamMM;
 
-Beam = rand(size(Beam));
+% Beam = rand(size(Beam));
 
 maxVX = 1.3; minVX = -1.4;
 maxVY = 1.5; minVY = -1.5;
@@ -327,7 +401,12 @@ h4 = figure;
 % pause(0.05)
 % trigger(obj.vid);
 % pause(0.05);
-dataRead = thor_single_frame(obj.cam, obj.MemId, obj.camWidth, obj.camHeight, obj.Bits);
+if strcmp(obj.camtype, 'DCx')
+    dataRead = thor_single_frame(obj.cam, obj.MemId, obj.camWidth, obj.camHeight, obj.Bits);
+elseif strcmp(obj.camtype, 'new')
+    dataRead = get_img_frame(obj.cam);
+end
+% dataRead = thor_single_frame(obj.cam, obj.MemId, obj.camWidth, obj.camHeight, obj.Bits);
 %getdata(obj.vid, obj.vid.FramesAvailable, 'uint16');
 figure(h4), imagesc(dataRead(:,:,:,1)); 
 colormap gray; axis image; set(gca,'XDir','reverse');

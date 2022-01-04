@@ -38,6 +38,7 @@ lsrL.dt(lsrL.ii) = lsrL.lastdt; % write time stamp (actually, dT)
 
 % check GUI for stop once every sec, it talkes about 50 ms
 if lsrL.lsrCounter == 1
+    fprintf('done\n');
   drawnow();
   if get(obj.pulse,'Value') == false
     lsrL.stop = 1;

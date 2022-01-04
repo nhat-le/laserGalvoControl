@@ -1,4 +1,3 @@
-function laserCtrlGUI2p1
 % laserCtrlGUI
 % GUI to control laser, galvos and video acquisition
 %
@@ -40,7 +39,7 @@ set(obj.statusTxt,'String','Performing quick power calibration...'); drawnow()
 % lsr = quickPowerCal(lsr);
 updateConsole(lsr.powerCalcheckMsg)
 set(obj.statusTxt,'String','Idle','foregroundcolor',[.3 .3 .3])
-end
+
 
 %%
 %==========================================================================
@@ -51,31 +50,81 @@ end
 function camON_callback(~,event)
 global obj
 
+obj.camtype = 'new';
+
 
 if get(obj.camON,'Value') == true 
   
   % create video input
   if ~isfield(obj,'cam')
-      obj.cam = uc480.Camera; 
-      obj.cam.Init(0);
+      if strcmp(obj.camtype, 'DCx')
+          obj.cam = uc480.Camera; 
+          obj.cam.Init(0);
 
-      obj.cam.Display.Mode.Set(uc480.Defines.DisplayMode.DiB);
-      obj.cam.PixelFormat.Set(uc480.Defines.ColorMode.RGB8Packed);
-      obj.cam.Trigger.Set(uc480.Defines.TriggerMode.Software);
-      
-      [status,obj.MemId] = obj.cam.Memory.Allocate(true);
-      if strcmp(status, 'NO_SUCCESS')
-          error('Error allocating memory...')
+          obj.cam.Display.Mode.Set(uc480.Defines.DisplayMode.DiB);
+          obj.cam.PixelFormat.Set(uc480.Defines.ColorMode.RGB8Packed);
+          obj.cam.Trigger.Set(uc480.Defines.TriggerMode.Software);
+
+          [status,obj.MemId] = obj.cam.Memory.Allocate(true);
+          if strcmp(status, 'NO_SUCCESS')
+              error('Error allocating memory...')
+          end
+          
+          [~,obj.camWidth,obj.camHeight,obj.Bits,~] = obj.cam.Memory.Inquire(obj.MemId);
+          obj.vidRes = [obj.camWidth, obj.camHeight];
+          nBands = 3;
+          obj.hImage = image(zeros(obj.vidRes(2),obj.vidRes(1), nBands),'Parent',obj.camfig);
+      elseif strcmp(obj.camtype, 'new')
+        % Load TLCamera DotNet assembly. The assembly .dll is assumed to be in the 
+        % same folder as the scripts.
+        % NET.addAssembly([pwd, '\Thorlabs.TSI.TLCamera.dll']);
+        NET.addAssembly('C:\Users\MMM_3p1_SI\Documents\laserGalvoControl\pupilVBP\Thorlabs.TSI.TLCamera.dll');
+        disp('Dot NET assembly loaded.');
+
+        tlCameraSDK = Thorlabs.TSI.TLCamera.TLCameraSDK.OpenTLCameraSDK;
+
+        % Get serial numbers of connected TLCameras.
+        serialNumbers = tlCameraSDK.DiscoverAvailableCameras;
+        disp([num2str(serialNumbers.Count), ' camera was discovered.']);
+
+        % Open the first TLCamera using the serial number.
+        disp('Opening the first camera')
+        obj.cam = tlCameraSDK.OpenCamera(serialNumbers.Item(0), false);
+
+        obj.cam.ExposureTime_us = 25000;
+        obj.cam.Gain = 0;
+        obj.cam.BlackLevel = 5;
+
+        % ROI and Bin
+        roiAndBin = obj.cam.ROIAndBin;
+        roiAndBin.ROIOriginX_pixels = 0;
+        roiAndBin.ROIWidth_pixels = 1920;
+        roiAndBin.ROIOriginY_pixels = 0;
+        roiAndBin.ROIHeight_pixels = 1200;
+        roiAndBin.BinX = 1;
+        roiAndBin.BinY = 1;
+        obj.cam.ROIAndBin = roiAndBin;
+
+        % Set the FIFO frame buffer size. Default size is 1.
+        obj.cam.MaximumNumberOfFramesToQueue = 5;
+
+        disp('Starting continuous image acquisition.');
+        obj.cam.OperationMode = Thorlabs.TSI.TLCameraInterfaces.OperationMode.SoftwareTriggered;
+        obj.cam.FramesPerTrigger_zeroForUnlimited = 0;
+        obj.cam.TriggerPolarity = Thorlabs.TSI.TLCameraInterfaces.TriggerPolarity.ActiveHigh;
+        obj.cam.Arm;
+        obj.cam.IssueSoftwareTrigger;
+%         maxPixelIntensity = double(2^obj.cam.BitDepth - 1);
+
+        obj.hImage = image(zeros(roiAndBin.ROIHeight_pixels,roiAndBin.ROIWidth_pixels, 1),'Parent',obj.camfig);
+        obj.vidRes = [roiAndBin.ROIWidth_pixels roiAndBin.ROIHeight_pixels];
+
       end
 
-      [~,obj.camWidth,obj.camHeight,obj.Bits,~] = obj.cam.Memory.Inquire(obj.MemId);
-      obj.vidRes = [obj.camWidth, obj.camHeight];
-      nBands = 3;
-      obj.hImage = image(zeros(obj.vidRes(2),obj.vidRes(1), nBands),'Parent',obj.camfig);
 
   end
   
-  
+  fprintf('Starting live feed...\n')
   camLoop2p1;
   
   % go into video data acquisition loop
@@ -243,6 +292,8 @@ if get(obj.setgrid,'Value') == true
   grid       = [];
   while ~stopSelection % 778,30 refpxl is [xpos(pix) ypos(pix)], bottom is 0, top is 1000 (Y), left is 1200, right is 0 (X)
     pxlin         = round(ginputax(gca, 1));
+    hold on
+    plot(pxlin(1), pxlin(2), 'yx');
     x             = (-pxlin(1) + lsr.refPxl(1))/lsr.pxlPerMM;
     y             = (-pxlin(2) + lsr.refPxl(2))/lsr.pxlPerMM;
     grid(end+1,:) = [x y];
@@ -475,6 +526,8 @@ end
 % quit GUI
 function quitgui_callback(~,event)
 global obj lsr
+obj.cam.Exit;
+
 if get(obj.quitgui,'Value') == true
   if isempty(lsr.console_fn) || isempty(dir(lsr.console_fn))
     usrin = questdlg('save session log?');
@@ -488,6 +541,7 @@ if get(obj.quitgui,'Value') == true
   end
   close(obj.fig); clear
 end
+
 end
 
 %%
@@ -792,7 +846,7 @@ end
 function galvocal_callback(~,event)
 global obj lsr
 if get(obj.galvocal,'Value') == true
-  galvoCal;
+  galvoCal2p1;
   figure(obj.fig)
   updateConsole('galvo calibration')
   lsr = getCalValues(lsr);

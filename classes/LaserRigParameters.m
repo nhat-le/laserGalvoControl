@@ -9,11 +9,13 @@ classdef LaserRigParameters
     
     laserPort                   =   'COM3';           % for serial communication with laser
     nidaqDevice                 =   1;                % NI-DAQ device identifier; if more than one use cell array
+    nidaqLaserDev               =   2;
+    aoChannelsLaser             =   0:1;
     
     aoChannels                  =   0:1;       %was 0:3       % analog output Channels (use cell if more than one device)
-    galvoCh                     =   [3 4];            % index of channels controlling galvos (attention for device mounting order!)
-    lsrSwitchCh                 =   2;                % channel index for turning laser on and off
-    lsrWaveCh                   =   1;                % channel index for laser waveform (frequency and power)
+    galvoCh                     =   [1 2];            % index of channels controlling galvos (attention for device mounting order!)
+    lsrSwitchCh                 =   3;                % channel index for turning laser on and off
+    lsrWaveCh                   =   4;                % channel index for laser waveform (frequency and power)
     
     aiChannels                  =   0:3;              % analog input Channels for virmen control (use cell if mpre than one device)
     galvoInCh                   =   [3 4];            % channel index for x and y galvo position feedback

@@ -41,9 +41,9 @@ if  ClickedPosition(1)>= 1             && ...
       nidaqAOPulse('aoPulse',dataout);
     case 'calibration'
       dataout = zeros(1,4);
-      dataout(LaserRigParameters.lsrSwitchCh) = 5;
-      dataout(LaserRigParameters.lsrWaveCh)   = vlsr;
-      nidaqAOPulse('aoPulse',dataout);
+%       dataout(LaserRigParameters.lsrSwitchCh) = 5;
+%       dataout(LaserRigParameters.lsrWaveCh)   = vlsr;
+%       nidaqAOPulse('aoPulse',dataout);
       
       dataout(LaserRigParameters.galvoCh(1)) = NewGalvoVoltage(1);
       dataout(LaserRigParameters.galvoCh(2)) = NewGalvoVoltage(2);
@@ -52,8 +52,13 @@ if  ClickedPosition(1)>= 1             && ...
 %       trigger(obj.vid);
 %       pause(0.05);
 %       dataRead = getdata(obj.vid, obj.vid.FramesAvailable, 'uint16');
-      dataRead = thor_single_frame(obj.cam, obj.MemId, obj.camWidth, obj.camHeight, obj.Bits);
-      figure(fh);
+%       dataRead = thor_single_frame(obj.cam, obj.MemId, obj.camWidth, obj.camHeight, obj.Bits);
+      if strcmp(obj.camtype, 'DCx')
+          dataRead = thor_single_frame(obj.cam, obj.MemId, obj.camWidth, obj.camHeight, obj.Bits);
+      elseif strcmp(obj.camtype, 'new')
+          dataRead = get_img_frame(obj.cam);
+      end
+        figure(fh);
       imagesc(dataRead(:,:,:,1)); colormap gray;
   end
   

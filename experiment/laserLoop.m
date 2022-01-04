@@ -8,6 +8,7 @@ function lsrL = laserLoop
 %% INITIALIZE
 global lsr obj
 rng('shuffle')
+lsr.preSetOn = 1;
 
 % initialize parameters
 lsrL.loopT              = 1/LaserRigParameters.rate; % skip iteration if longer than this
@@ -45,7 +46,7 @@ if lsr.preSetOn % for preset experiments (e.g. ephys)
   % update status
   set(obj.statusTxt,'foregroundColor','c')
   set(obj.statusTxt,'String','running preset protocol')
-  
+  lsr = computeOuputDataPreSetSequential(lsr);
   % run
   lsrL.totalDur     = 0;
   lsrL.maxDur       = lsr.presetMaxDurMin*60;

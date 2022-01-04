@@ -14,8 +14,16 @@ end
 cla
 
 %% image
-imagesc(obj.camData); colormap gray; axis image; hold on
+set(gca,'XDir','normal', 'YDir','normal', 'xtick',[],'ytick',[]);
+
+imagesc(obj.camData); 
+colormap gray; 
+axis image; 
+hold on
+view([90 -90])
+caxis([13, 600]);
 set(gca,'XDir','reverse','xtick',[],'ytick',[]);
+% set(gca,'xtick',[],'ytick',[]);
 
 %% bregma
 x = lsr.refPxl(1); y = lsr.refPxl(2);

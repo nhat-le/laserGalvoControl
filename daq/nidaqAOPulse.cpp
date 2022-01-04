@@ -1,9 +1,10 @@
 #include <mex.h>
-#include <NIDAQmx.h>
+#include "NIDAQmx.h"
 
 #include <iostream>
 #include <chrono>
 #include <thread>
+#include <string.h> 
 
 
 //-----------------------------------------------------------------------------

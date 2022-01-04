@@ -14,6 +14,7 @@ switch command
     
     nidaqAIread  ('init',LaserRigParameters.nidaqDevice,LaserRigParameters.aiChannels);
     nidaqAOPulse ('init',LaserRigParameters.nidaqDevice,LaserRigParameters.aoChannels);
+%     nidaqAOPulse ('init',LaserRigParameters.nidaqLaserDev,LaserRigParameters.aoChannelsLaser);
     nidaqDIread  ('init',LaserRigParameters.nidaqDevice,LaserRigParameters.diPort,LaserRigParameters.diChannels);
     nidaqDOwrite ('init',LaserRigParameters.nidaqDevice,LaserRigParameters.doPortLED,LaserRigParameters.doChannelsLED);
     nidaqPulse   ('init',LaserRigParameters.nidaqDevice,LaserRigParameters.doPort,LaserRigParameters.doChannels);

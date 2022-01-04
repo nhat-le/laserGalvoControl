@@ -26,7 +26,7 @@ nidaqAOPulse('aoPulse',lsrL.data);
 if lsrL.lsrCounter == lsr.dataout_preset.vecLength; 
     lsrL.lsrCounter  = 0; 
     lsrL.cycleCounter = lsrL.cycleCounter+1; 
-    fprintf('\tcycle #%03d / %03d\n',lsrL.cycleCounter,lsrL.ncycles)
+%     fprintf('\tcycle #%03d / %03d\n',lsrL.cycleCounter,lsrL.ncycles)
 end
 lsrL.lsrCounter = lsrL.lsrCounter+1;
 lsrL.ii         = lsrL.ii+1;
@@ -43,7 +43,15 @@ end
 lsrL.totalDur = lsrL.totalDur + lsrL.lastdt;
 
 % check GUI for stop once every sec, it talkes about 50 ms
-if lsrL.totalDur >= lsrL.maxDur 
+% disp(lsrL.totalDur)
+if lsrL.totalDur >= lsr.dataout_preset.maxDur * 3000000000; %lsrL.maxDur 
     lsrL.stop = 1;
 end
+
+% if lsrL.lsrCounter == 1
+%   drawnow();
+%   if get(obj.pulse,'Value') == false
+%     lsrL.stop = 1;
+%   end
+% end
 end

@@ -12,9 +12,10 @@ for iLoc = 1:length(lsrobj.locationSet)
   % to compensate
   if numel(lsrobj.locationSet{iLoc}) == 1
     % laser
+    lsrobj.presetLocDur = 0.2;
     szl = ((1000*lsrobj.presetLocDur)/lsrobj.freq)*(LaserRigParameters.rate/(1000*lsrobj.presetLocDur));
     lsrobj.dataout_preset.lsrVec = [lsrobj.dataout_preset.lsrVec; repmat([ones(floor(szl*lsrobj.dutyCycle),1); ...
-      zeros(ceil(szl*(1-lsrobj.dutyCycle)),1)],lsrobj.freq,1).*lsrobj.Vlsr_preset(iLoc)];
+      zeros(ceil(szl*(1-lsrobj.dutyCycle)),1)],lsrobj.freq,1).* 0]; %lsrobj.Vlsr_preset(iLoc)];
     lsrobj.dataout_preset.lsrVec = repmat(lsrobj.dataout_preset.lsrVec,[lsrobj.presetLocDur 1]);
     if iLoc == 1
       vL = numel(lsrobj.dataout_preset.lsrVec);
