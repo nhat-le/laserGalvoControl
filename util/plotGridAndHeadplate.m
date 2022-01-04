@@ -21,7 +21,7 @@ colormap gray;
 axis image; 
 hold on
 view([90 -90])
-caxis([13, 600]);
+caxis([lsr.disp_min, lsr.disp_max]);
 set(gca,'XDir','reverse','xtick',[],'ytick',[]);
 % set(gca,'xtick',[],'ytick',[]);
 

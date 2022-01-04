@@ -25,6 +25,8 @@ classdef lsrCtrlParams
     manualTrigger   = false;    % enable manual trigger
     rampDownDur     = 0.1;      % duration of laser power ramp down in sec
     loopTimeTol     = .8;       % percent time beyond laser loop iteration time before iteration is skipped
+    disp_min        = 10;
+    disp_max        = 600;
     
     % galvo parameters
     galvofreq       = 200;      % Hz (only has effect for multiple locations)
