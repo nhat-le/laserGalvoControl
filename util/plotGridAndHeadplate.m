@@ -11,6 +11,7 @@ if nargin < 1; fh = []; end
 if isempty(fh)
   axes(obj.camfig); % focus
 end
+
 cla
 
 %% image
@@ -30,7 +31,7 @@ x = lsr.refPxl(1); y = lsr.refPxl(2);
 plot(x,y,'m+','markersize',10) % reference
 
 % headplate
-if ~isempty(lsr.headplateOutline)
+if ~isempty(lsr.headplateOutline) && get(obj.headplate_toggle, 'Value')
   plot(lsr.headplateOutlineX,lsr.headplateOutlineY,'y.')
 end
 

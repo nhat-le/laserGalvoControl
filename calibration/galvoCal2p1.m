@@ -25,7 +25,7 @@ nidaqComm('init');
 if ~isempty(dir(sprintf('%scalibration\\galvoCal.mat',lsr.rootdir)))
     load(sprintf('%scalibration\\galvoCal.mat',lsr.rootdir),'calDate','tform')
     copyfile(sprintf('%scalibration\\galvoCal.mat',lsr.rootdir),...
-        sprintf('%scalibration\\galvoCal_%s.mat',lsr.savepath,calDate))
+        sprintf('%scalibration\\galvoCal_%s.mat',lsr.savepath,calDate), 'f')
     clear caldate tform
 end
 

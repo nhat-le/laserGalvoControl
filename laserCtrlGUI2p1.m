@@ -261,7 +261,7 @@ lsr.P_on        = P_on;
 lsr.grid        = grid;
 lsr.gridLabel   = fn;
 lsr.locationSet = [];
-set(obj.pON,'String',num2str(lsr.P_on));
+% set(obj.pON,'String',num2str(lsr.P_on));
 updateConsole(sprintf('loaded %s',fn))
 
 if iscell(lsr.grid) % grid indicates simulatenous regions (each cell has the coordinates for those)
@@ -349,21 +349,20 @@ function registerIm_callback(~,event)
 global obj lsr
 
 if get(obj.registerIm,'Value') == true
-  
-  if isempty(lsr.currIm)
     thisdir = pwd;
     cd(lsr.savepath)
-    thisfn = uigetfile('*.tif','select image');
-    frame = imread(thisfn);
+    [fname, path] = uigetfile('*.tif','select image');
+    refImg = imread(fullfile(path, fname));
     cd(thisdir)
     lsr.currIm  = obj.camData; 
-  end
+  
   
   set(obj.statusTxt,'String','performing Im regsitration...')
   drawnow()
   
-  [regMsg,lsr.okFlag] = registerImage(lsr.refIm,lsr.currIm,false);
-  wd = warndlg(regMsg,'Registration output');
+  obj.tform =  opto_img_align(refImg, obj.camData);
+%   [regMsg,lsr.okFlag] = registerImage(lsr.refIm,lsr.currIm,false);
+%   wd = warndlg(regMsg,'Registration output');
 
   set(obj.statusTxt,'String','Idle')
   updateConsole('image registered')
@@ -463,6 +462,7 @@ end
 if ~isempty(dir(sprintf('%s%s_headplate.mat',lsr.savepath,lsr.mouseID)))
   load(sprintf('%s%s_headplate.mat',lsr.savepath,lsr.mouseID),'headplateContour')
   lsr.headplateOutline = headplateContour;
+  [lsr.headplateOutlineY,lsr.headplateOutlineX] = find(fliplr(lsr.headplateOutline)==1);
 else
   thish = warndlg('headplate outline not found');
 end
@@ -475,19 +475,19 @@ varpower = animalList.varPower(midx);
 epoch    = animalList.epochList{midx};
 epochVal = find(strcmpi(lsr.epochList,epoch));
 
-set(obj.power,'String', num2str(power)); laserpower([],true);
-set(obj.epoch,'Value' , epochVal);       epoch_callback([],true)
-set(obj.varypower,'Value',varpower);     varypower_callback([],true);
-loadgrid([lsr.rootdir '\grid\' grid])
+% set(obj.power,'String', num2str(power)); laserpower([],true);
+% set(obj.epoch,'Value' , epochVal);       epoch_callback([],true)
+% set(obj.varypower,'Value',varpower);     varypower_callback([],true);
+% loadgrid([lsr.rootdir '\grid\' grid])
 
 if isfield(obj,'camData'); plotGridAndHeadplate(obj.camfig); end
 
-runOnLsr = animalList.runOnLsr(midx);
-if runOnLsr
-  thish = warndlg('Run this mouse on laser');
-else
-  thish = warndlg('Just training for this mouse');
-end
+% runOnLsr = animalList.runOnLsr(midx);
+% if runOnLsr
+%   thish = warndlg('Run this mouse on laser');
+% else
+%   thish = warndlg('Just training for this mouse');
+% end
 
 end
 
@@ -583,6 +583,13 @@ lsr.disp_max = str2double(get(obj.disp_max,'String'));
 updateConsole(sprintf('display max changed to %s',get(obj.disp_max,'String')))
 end
 
+function headplatetoggle_callback(~,event)
+global obj
+show_headplate = get(obj.headplate_toggle, 'Value');
+updateConsole(sprintf('Headplate toggled: %d', show_headplate))
+
+end
+
 function autoscale_callback(~,event)
 global obj lsr
 
@@ -670,10 +677,17 @@ end
 % set AP position with text input
 function posX_callback(~,event)
 global obj lsr
-
+lsr.AP = str2double(get(obj.posY,'String'));
 lsr.ML = str2double(get(obj.posX,'String'));
+
 [lsr.galvoManualVx,lsr.galvoManualVy] = convertToGalvoVoltage([lsr.ML lsr.AP],'mm');
 lsr = computeOuputData(lsr);
+
+dataout = zeros(1,4);
+dataout(LaserRigParameters.galvoCh(1)) =lsr.galvoManualVx;
+dataout(LaserRigParameters.galvoCh(2)) = lsr.galvoManualVy;
+nidaqAOPulse('aoPulse',dataout);
+
 updateConsole('galvo position manually updated')
 
 end
@@ -683,8 +697,16 @@ function posY_callback(~,event)
 global obj lsr
 
 lsr.AP = str2double(get(obj.posY,'String'));
+lsr.ML = str2double(get(obj.posX,'String'));
+
 [lsr.galvoManualVx,lsr.galvoManualVy] = convertToGalvoVoltage([lsr.ML lsr.AP],'mm');
 lsr = computeOuputData(lsr);
+
+dataout = zeros(1,4);
+dataout(LaserRigParameters.galvoCh(1)) =lsr.galvoManualVx;
+dataout(LaserRigParameters.galvoCh(2)) = lsr.galvoManualVy;
+nidaqAOPulse('aoPulse',dataout);
+
 updateConsole('galvo position manually updated')
 
 end
@@ -994,7 +1016,7 @@ global obj lsr
 
 obj.animalListObj = animalList;
 obj.subjList = obj.animalListObj.mouseList;
-obj.subjList{end+1} = 'add new';
+% obj.subjList{end+1} = 'add new';
 obj.consoleInitString = {'------------------------------------------'; ...
                          ['        ' datestr(datetime)]              ; ...
                          '------------------------------------------'; ...
@@ -1235,6 +1257,15 @@ obj.autoscale =   uicontrol (obj.laserparams,                              ...
                     'Callback',             @autoscale_callback,  ...
                     'fontsize',             13,...
                     'FontWeight',           'bold');
+                
+obj.headplate_toggle =   uicontrol (obj.laserparams,                              ...
+                    'String',               'Headplate',         ...
+                    'Style',                'checkbox',       ...
+                    'Units',                'normalized',       ...
+                    'Position',             [0.65,0.2,0.3,0.2], ...
+                    'Callback',             @headplatetoggle_callback,  ...
+                    'fontsize',             10,...
+                    'FontWeight',           'normal');
 % obj.power_txt = uicontrol(obj.laserparams,                          ...
 %                         'Style',                'text',             ...
 %                         'String',               'Power (mW):',      ...

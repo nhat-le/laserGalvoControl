@@ -47,7 +47,8 @@ classdef lsrCtrlParams
     Vlsr_preset
     
     % galvo calibration
-    pxlPerMM       = 86;        % camera scale
+%     pxlPerMM       = 86;        % camera scale
+    pxlPerMM = 187.5;
     refPxl         = [960 600]; % reference (zero) pixel, center of image for session start
     refIm                       % reference image of the skull (on which coordinates are calculated)
     currIm                      % current image of the skull (to which coordinates are transformed)
