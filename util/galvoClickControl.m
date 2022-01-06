@@ -58,7 +58,8 @@ if  ClickedPosition(1)>= 1             && ...
       elseif strcmp(obj.camtype, 'new')
           dataRead = get_img_frame(obj.cam);
       end
-        figure(fh);
+%         figure(fh);
+      axes(obj.camfig);
       imagesc(dataRead(:,:,:,1)); colormap gray;
   end
   

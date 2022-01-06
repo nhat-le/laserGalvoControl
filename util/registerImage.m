@@ -29,7 +29,11 @@ ref = fliplr(ref);
 %% use only relevant subregion?
 if subImFlag
   f3 = figure;
-  imshow(im); title('please select sub-region for registration')
+  subplot(121)
+  imagesc(im); title('please select sub-region for registration')
+  
+  subplot(122)
+  imagesc(ref);
   r = getrect(f3);
   im  = im(r(2):r(2)+r(4),r(1):r(1)+r(3));
   ref = ref(r(2):r(2)+r(4),r(1):r(1)+r(3));

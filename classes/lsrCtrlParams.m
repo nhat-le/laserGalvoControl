@@ -14,7 +14,7 @@ classdef lsrCtrlParams
     powerCalcheckMsg              % warning message for power calibratiomn
     
     % laser waveform (defaults, may be edited using GUI)
-    freq            = 40;       % Hz
+    freq            = 200;       % Hz
     power           = 6;        % mW
     dur             = Inf;      % sec
     dutyCycle       = .8;       % how long is laser on during each pulse

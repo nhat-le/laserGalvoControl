@@ -328,10 +328,10 @@ if get(obj.setgrid,'Value') == true
   lsr = calculateP_on(lsr);
   
   if prevPon > lsr.P_on
-    set(obj.pON,'String',num2str(lsr.P_on));
+%     set(obj.pON,'String',num2str(lsr.P_on));
     updateConsole(sprintf('laser on prob. capped at %1.2f',lsr.P_on))
   elseif prevPon < lsr.P_on
-    set(obj.pON,'String',num2str(lsr.P_on));
+%     set(obj.pON,'String',num2str(lsr.P_on));
     updateConsole(sprintf('laser on prob. automatically increased to %1.2f',lsr.P_on))
   end
   P_on = lsr.P_on;
@@ -871,29 +871,74 @@ end
 % sweep galvos
 function galvosweep_callback(~,event)
 global obj lsr
+
+% Sweep the 5x5 calibration grid
+% if get(obj.galvosweep,'Value') == true
+%   dataout = zeros(1,4);
+%   dataout(LaserRigParameters.lsrSwitchCh) = 5;
+%   dataout(LaserRigParameters.lsrWaveCh)   = lsr.Vlsr;
+%   GridSizeX    = 5;
+%   GridSizeY    = 5;
+%   VxMin        = -0.2; VxMax = 0.2;
+%   VyMin        = -0.2; VyMax = 0.2;
+%   for i=1:GridSizeX
+%     for j=1:GridSizeY
+%       Vx = (VxMax-VxMin)*(i-1)/(GridSizeX-1) + VxMin;
+%       Vy = (VyMax-VyMin)*(j-1)/(GridSizeY-1) + VyMin;
+%       
+%       dataout(LaserRigParameters.galvoCh(1)) = Vx;
+%       dataout(LaserRigParameters.galvoCh(2)) = Vy;
+%       
+%       nidaqAOPulse('aoPulse',dataout);
+%       delay(.2);
+%     end
+%   end
+%   dataout = zeros(1,4);
+%   nidaqAOPulse('aoPulse',dataout);
+% end
+
+% Sweep the selected points
 if get(obj.galvosweep,'Value') == true
-  dataout = zeros(1,4);
-  dataout(LaserRigParameters.lsrSwitchCh) = 5;
-  dataout(LaserRigParameters.lsrWaveCh)   = lsr.Vlsr;
-  GridSizeX    = 11;
-  GridSizeY    = 11;
-  VxMin        = -1.5; VxMax = 1.5;
-  VyMin        = -1.0; VyMax = 1.0;
-  for i=1:GridSizeX
-    for j=1:GridSizeY
-      Vx = (VxMax-VxMin)*(i-1)/(GridSizeX-1) + VxMin;
-      Vy = (VyMax-VyMin)*(j-1)/(GridSizeY-1) + VyMin;
-      
-      dataout(LaserRigParameters.galvoCh(1)) = Vx;
-      dataout(LaserRigParameters.galvoCh(2)) = Vy;
-      
-      nidaqAOPulse('aoPulse',dataout);
-      delay(.2);
+    dataout = zeros(1,4);
+    dataout(LaserRigParameters.lsrSwitchCh) = 5;
+    dataout(LaserRigParameters.lsrWaveCh)   = lsr.Vlsr;
+    
+    axes(obj.camfig);
+    for niter = 1:3
+        for i=1:size(lsr.grid, 1)
+            gridpoint = lsr.grid(i,:);
+            [Vx, Vy] = convertToGalvoVoltage(gridpoint, 'mm');
+
+            dataout(LaserRigParameters.galvoCh(1)) = Vx;
+            dataout(LaserRigParameters.galvoCh(2)) = Vy;
+
+            nidaqAOPulse('aoPulse',dataout);
+
+            % Show camera image
+            pause(1)
+            if strcmp(obj.camtype, 'DCx')
+                dataRead = thor_single_frame(obj.cam, obj.MemId, obj.camWidth, obj.camHeight, obj.Bits);
+            elseif strcmp(obj.camtype, 'new')
+                dataRead = get_img_frame(obj.cam);
+            end
+    %         pause(waitTime);
+            obj.camData = dataRead(:,:,:,end);
+
+            % plot
+            plotGridAndHeadplate(obj.camfig)
+
+    %         imagesc(dataRead(:,:,:,1)); colormap gray; axis image; set(gca,'XDir','reverse');
+    % 
+            
+        end
     end
-  end
-  dataout = zeros(1,4);
-  nidaqAOPulse('aoPulse',dataout);
+    
+    dataout = zeros(1,4);
+    nidaqAOPulse('aoPulse',dataout);
 end
+
+
+
 end
 
 %%

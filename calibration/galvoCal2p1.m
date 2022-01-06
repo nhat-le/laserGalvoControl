@@ -12,7 +12,10 @@ if strcmp(obj.camtype, 'DCx')
 else
     waitTime = 1;
 end
-lsr = lsrCtrlParams;  
+
+if isempty(lsr)
+    lsr = lsrCtrlParams;
+end
 commandwindow;
 fprintf('calibrating galvos...\n')
 nidaqComm('init');
@@ -47,64 +50,66 @@ calDate       = datestr(datetime,'yymmdd_HHMMSS');
 % src.FrameRate            = 20;
 % 
 % start(obj.vid);
-% Create video object
-if strcmp(obj.camtype, 'DCx')
-    NET.addAssembly('C:\Program Files\Thorlabs\Scientific Imaging\DCx Camera Support\Develop\DotNet\uc480DotNet.dll');
-    obj.cam = uc480.Camera;
+% Create video object, if not existing
+if ~isfield(obj, 'cam')
+    if strcmp(obj.camtype, 'DCx')
+        NET.addAssembly('C:\Program Files\Thorlabs\Scientific Imaging\DCx Camera Support\Develop\DotNet\uc480DotNet.dll');
+        obj.cam = uc480.Camera;
 
-    obj.cam.Init(0);
+        obj.cam.Init(0);
 
-    obj.cam.Display.Mode.Set(uc480.Defines.DisplayMode.DiB);
-    obj.cam.PixelFormat.Set(uc480.Defines.ColorMode.RGB8Packed);
-    obj.cam.Trigger.Set(uc480.Defines.TriggerMode.Software);
+        obj.cam.Display.Mode.Set(uc480.Defines.DisplayMode.DiB);
+        obj.cam.PixelFormat.Set(uc480.Defines.ColorMode.RGB8Packed);
+        obj.cam.Trigger.Set(uc480.Defines.TriggerMode.Software);
 
-    % figure;
-    [status,obj.MemId] = obj.cam.Memory.Allocate(true);
-    if strcmp(status, 'NO_SUCCESS')
-        error('Error allocating memory...')
+        % figure;
+        [status,obj.MemId] = obj.cam.Memory.Allocate(true);
+        if strcmp(status, 'NO_SUCCESS')
+            error('Error allocating memory...')
+        end
+
+        [~,obj.camWidth,obj.camHeight,obj.Bits,~] = obj.cam.Memory.Inquire(obj.MemId);
+        obj.vidRes = [obj.camWidth, obj.camHeight];
+    elseif strcmp(obj.camtype, 'new')
+        cd C:\Users\MMM_3p1_SI\Documents\laserGalvoControl\pupilVBP
+        NET.addAssembly('C:\Users\MMM_3p1_SI\Documents\laserGalvoControl\pupilVBP\Thorlabs.TSI.TLCamera.dll');
+        disp('Dot NET assembly loaded.');
+
+        tlCameraSDK = Thorlabs.TSI.TLCamera.TLCameraSDK.OpenTLCameraSDK;
+
+        % Get serial numbers of connected TLCameras.
+        serialNumbers = tlCameraSDK.DiscoverAvailableCameras;
+        disp([num2str(serialNumbers.Count), ' camera was discovered.']);
+
+        % Open the first TLCamera using the serial number.
+        disp('Opening the first camera')
+        obj.cam = tlCameraSDK.OpenCamera(serialNumbers.Item(0), false);
+
+        obj.cam.ExposureTime_us = 25000;
+        obj.cam.Gain = 0;
+        obj.cam.BlackLevel = 5;
+
+        % ROI and Bin
+        roiAndBin = obj.cam.ROIAndBin;
+        roiAndBin.ROIOriginX_pixels = 0;
+        roiAndBin.ROIWidth_pixels = 1920; %1500;
+        roiAndBin.ROIOriginY_pixels = 0;
+        roiAndBin.ROIHeight_pixels = 1200; %1000;
+        roiAndBin.BinX = 1;
+        roiAndBin.BinY = 1;
+        obj.cam.ROIAndBin = roiAndBin;
+
+        % Set the FIFO frame buffer size. Default size is 1.
+        obj.cam.MaximumNumberOfFramesToQueue = 5;
+
+        disp('Starting continuous image acquisition.');
+        obj.cam.OperationMode = Thorlabs.TSI.TLCameraInterfaces.OperationMode.SoftwareTriggered;
+        obj.cam.FramesPerTrigger_zeroForUnlimited = 0;
+        obj.cam.TriggerPolarity = Thorlabs.TSI.TLCameraInterfaces.TriggerPolarity.ActiveHigh;
+        obj.cam.Arm;
+        obj.cam.IssueSoftwareTrigger;
+        maxPixelIntensity = double(2^obj.cam.BitDepth - 1);
     end
-
-    [~,obj.camWidth,obj.camHeight,obj.Bits,~] = obj.cam.Memory.Inquire(obj.MemId);
-    obj.vidRes = [obj.camWidth, obj.camHeight];
-elseif strcmp(obj.camtype, 'new')
-
-    NET.addAssembly('C:\Users\MMM_3p1_SI\Documents\laserGalvoControl\pupilVBP\Thorlabs.TSI.TLCamera.dll');
-    disp('Dot NET assembly loaded.');
-
-    tlCameraSDK = Thorlabs.TSI.TLCamera.TLCameraSDK.OpenTLCameraSDK;
-
-    % Get serial numbers of connected TLCameras.
-    serialNumbers = tlCameraSDK.DiscoverAvailableCameras;
-    disp([num2str(serialNumbers.Count), ' camera was discovered.']);
-
-    % Open the first TLCamera using the serial number.
-    disp('Opening the first camera')
-    obj.cam = tlCameraSDK.OpenCamera(serialNumbers.Item(0), false);
-
-    obj.cam.ExposureTime_us = 25000;
-    obj.cam.Gain = 0;
-    obj.cam.BlackLevel = 5;
-
-    % ROI and Bin
-    roiAndBin = obj.cam.ROIAndBin;
-    roiAndBin.ROIOriginX_pixels = 0;
-    roiAndBin.ROIWidth_pixels = 1500;
-    roiAndBin.ROIOriginY_pixels = 0;
-    roiAndBin.ROIHeight_pixels = 1000;
-    roiAndBin.BinX = 1;
-    roiAndBin.BinY = 1;
-    obj.cam.ROIAndBin = roiAndBin;
-
-    % Set the FIFO frame buffer size. Default size is 1.
-    obj.cam.MaximumNumberOfFramesToQueue = 5;
-
-    disp('Starting continuous image acquisition.');
-    obj.cam.OperationMode = Thorlabs.TSI.TLCameraInterfaces.OperationMode.SoftwareTriggered;
-    obj.cam.FramesPerTrigger_zeroForUnlimited = 0;
-    obj.cam.TriggerPolarity = Thorlabs.TSI.TLCameraInterfaces.TriggerPolarity.ActiveHigh;
-    obj.cam.Arm;
-    obj.cam.IssueSoftwareTrigger;
-    maxPixelIntensity = double(2^obj.cam.BitDepth - 1);
 end
 
 %% PREVIEW 
@@ -121,13 +126,13 @@ if strcmp(obj.camtype, 'DCx')
 elseif strcmp(obj.camtype, 'new')
     Data = get_img_frame(obj.cam);
 end
-hImage = imshow(Data);
+% hImage = imshow(Data);
 % hImage                                  = preview(obj.vid);
 % handleAxes                              = ancestor(hImage,'axes');
 % set(handleAxes,'XDir','reverse');
 
-pause(1)
-close(gcf);
+% pause(1)
+% close(gcf);
 %% Acquire the images for each position of the laser
 
 % stoppreview(obj.vid);
@@ -156,7 +161,8 @@ data         = [];
 GalvoVoltage = [];
 % dataRead     = getdata(obj.vid, obj.vid.FramesAvailable, 'uint16'); %flush buffer
 
-h = figure; 
+% h = figure; 
+axes(obj.camfig);
 for iX = 1:GridSizeX
   for iY = 1:GridSizeY
       Vx = (VxMax-VxMin)*(iX-1)/(GridSizeX-1) + VxMin;
@@ -177,7 +183,9 @@ for iX = 1:GridSizeX
 %       dataRead = thor_single_frame(obj.cam, obj.MemId, obj.camWidth, obj.camHeight, obj.Bits);
       pause(waitTime);
 %       dataRead = getdata(obj.vid, obj.vid.FramesAvailable, 'uint16');
-      figure(h), imagesc(dataRead(:,:,:,1)); colormap gray; axis image; set(gca,'XDir','reverse');
+      
+% figure(h), 
+      imagesc(dataRead(:,:,:,1)); colormap gray; axis image; set(gca,'XDir','reverse');
       title(sprintf('Different positions of the beam are being scanned: %d, %d', iX, iY))
       if iX==1 && iY==1
           data                  = dataRead(:,:,:,1);
@@ -217,7 +225,7 @@ if saveCalImFlag
   end
 end
 
-close(h)
+% close(h)
 
 %% 2-Create map of laser beam positions
 Beam = [];
@@ -226,7 +234,8 @@ for ii = 1:numFrames
 end
 IntensityOfSpot = max(MaxIntensityOfFrame(:));
 
-figure;
+% figure;
+axes(obj.camfig);
 for ii = 1:numFrames
     cla;
     disp(['location ',num2str(ii),' out of ',num2str(numFrames)])
@@ -261,7 +270,8 @@ for ii = 1:numFrames
 
     imagesc(data(:,:,:,ii))
     hold on
-    [xpos, ypos] = ginput(1);
+    [xpos, ypos] = ginputax(gca, 1);
+%     [xpos, ypos] = ginput(1);
     Beam(ii,:) = [xpos, ypos];
     
     
@@ -396,7 +406,7 @@ dataout(LaserRigParameters.lsrSwitchCh) = 5;
 dataout(LaserRigParameters.lsrWaveCh)   = 0.001;
 nidaqAOPulse('aoPulse',dataout);
 
-h4 = figure; 
+% h4 = figure; 
 % start(obj.vid);
 % pause(0.05)
 % trigger(obj.vid);
@@ -408,17 +418,19 @@ elseif strcmp(obj.camtype, 'new')
 end
 % dataRead = thor_single_frame(obj.cam, obj.MemId, obj.camWidth, obj.camHeight, obj.Bits);
 %getdata(obj.vid, obj.vid.FramesAvailable, 'uint16');
-figure(h4), imagesc(dataRead(:,:,:,1)); 
+% figure(h4), 
+axes(obj.camfig);
+imagesc(dataRead(:,:,:,1)); 
 colormap gray; axis image; set(gca,'XDir','reverse');
 title('Calibration test - Click a new location for the beam')
 
 lsr.galvoTform = galvoCal.tform;
 for ii=1:10
-  galvoClickControl('calibration',h4)
+  galvoClickControl('calibration')
 end
 
 % stop(obj.vid);
-close(h4)
+% close(h4)
 
 % park beam outside field of view
 nidaqAOPulse('aoPulse',[-5 -5 0 0]);
