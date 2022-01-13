@@ -1,6 +1,6 @@
 function tform = opto_img_align(ref, im)
 %ref, im: arrays representing the reference and image to align
-global lsr
+global obj lsr
 
 %% Load the reference and data images
 % Resize singleImg to match dimensions of reference

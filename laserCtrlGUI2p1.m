@@ -472,6 +472,15 @@ power    = animalList.powerList{midx};
 grid     = animalList.gridList{midx};
 varpower = animalList.varPower(midx);
 
+% Load template
+templateDir = animalList.templateDir{midx};
+files = dir(fullfile(templateDir, '*.mat'));
+assert(numel(files) == 1);
+load(fullfile(files(1).folder, files(1).name), 'borders', 'opts');
+lsr.borders = borders;
+[lsr.bordersOutlineX,lsr.bordersOutlineY] = find(borders==1); %TODO: do we need to transform?
+obj.imgpath = opts.imgpath;
+
 epoch    = animalList.epochList{midx};
 epochVal = find(strcmpi(lsr.epochList,epoch));
 
@@ -587,6 +596,13 @@ function headplatetoggle_callback(~,event)
 global obj
 show_headplate = get(obj.headplate_toggle, 'Value');
 updateConsole(sprintf('Headplate toggled: %d', show_headplate))
+
+end
+
+function allentoggle_callback(~,event)
+global obj
+show_borders = get(obj.allen_toggle, 'Value');
+updateConsole(sprintf('Allen toggled: %d', show_borders))
 
 end
 
@@ -1266,6 +1282,16 @@ obj.headplate_toggle =   uicontrol (obj.laserparams,                            
                     'Callback',             @headplatetoggle_callback,  ...
                     'fontsize',             10,...
                     'FontWeight',           'normal');
+                
+                
+obj.allen_toggle =   uicontrol (obj.laserparams,                              ...
+                    'String',               'Borders',         ...
+                    'Style',                'checkbox',       ...
+                    'Units',                'normalized',       ...
+                    'Position',             [0.65,0.05,0.3,0.2], ...
+                    'Callback',             @allentoggle_callback,  ...
+                    'fontsize',             10,...
+                    'FontWeight',           'normal');                
 % obj.power_txt = uicontrol(obj.laserparams,                          ...
 %                         'Style',                'text',             ...
 %                         'String',               'Power (mW):',      ...

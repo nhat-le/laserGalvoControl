@@ -74,6 +74,11 @@ classdef lsrCtrlParams
     headplateOutline            % headplate outline for manual mouse positioning
     headplateOutlineX
     headplateOutlineY
+    
+    borders                    % borders from allen template
+    bordersOutlineX
+    bordersOutlineY
+    
     gridImX
     gridImY
     
