@@ -14,7 +14,7 @@ classdef lsrCtrlParams
     powerCalcheckMsg              % warning message for power calibratiomn
     
     % laser waveform (defaults, may be edited using GUI)
-    freq            = 200;       % Hz
+    freq            = 5;       % Hz
     power           = 6;        % mW
     dur             = Inf;      % sec
     dutyCycle       = .8;       % how long is laser on during each pulse
@@ -22,7 +22,7 @@ classdef lsrCtrlParams
     ML              = 1;        % mm from bregma
     maxPonPerLoc    = .3;       % max prob per stim location (will overide P_on)
     P_on            = .8;       % fraction of trials lsr ON
-    manualTrigger   = false;    % enable manual trigger
+    manualTrigger   = true;    % enable manual trigger
     rampDownDur     = 0.1;      % duration of laser power ramp down in sec
     loopTimeTol     = .8;       % percent time beyond laser loop iteration time before iteration is skipped
     disp_min        = 10;
