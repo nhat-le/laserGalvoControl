@@ -12,9 +12,17 @@ global obj lsr
 figure('Position', [39 378 961 420]);
 subplot(122);
 imagesc(im);
+axis image
+view([90 -90])
+set(gca,'XDir','reverse','xtick',[],'ytick',[]);
+
 colormap gray
 subplot(121)
 imagesc(ref);
+axis image
+view([90 -90])
+set(gca,'XDir','reverse','xtick',[],'ytick',[]);
+
 lowlim = prctile(ref(:), 1);
 upperlim = prctile(ref(:), 99);
 caxis([lowlim, upperlim]);
@@ -31,6 +39,10 @@ text(refPoints(:,1) + 10,refPoints(:,2) + 10, labelArr, 'Color', 'w');
 
 subplot(122)
 imagesc(im);
+axis image
+view([90 -90])
+set(gca,'XDir','reverse','xtick',[],'ytick',[]);
+
 hold on
 title('Select landmarks on the data, then press enter');
 [x2,y2] = getpts;

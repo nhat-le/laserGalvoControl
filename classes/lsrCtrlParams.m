@@ -79,6 +79,9 @@ classdef lsrCtrlParams
     bordersOutlineX
     bordersOutlineY
     
+    clusterPoints              % location of frontal, visual, motor, rsc points for inactivation
+    activeCluster
+    
     gridImX
     gridImY
     
