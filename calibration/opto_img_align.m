@@ -4,7 +4,7 @@ global obj lsr
 
 %% Load the reference and data images
 % Resize singleImg to match dimensions of reference
-im = imresize(im, size(ref));
+% im = imresize(im, size(ref));
 
 % TODO: determine if we need to flip the images
 
@@ -15,6 +15,9 @@ imagesc(im);
 colormap gray
 subplot(121)
 imagesc(ref);
+lowlim = prctile(ref(:), 1);
+upperlim = prctile(ref(:), 99);
+caxis([lowlim, upperlim]);
 hold on
 title('Select landmarks on the reference, then press enter');
 [x1,y1] = getpts;
@@ -40,8 +43,15 @@ affine = 0;
 if affine, affinestr='affine'; else, affinestr='nonreflectivesimilarity'; end
 tform = fitgeotrans(refPoints, imgPoints, affinestr);
 rotpoints = transformPointsForward(tform,refPoints);
+
+transformedpts = transformPointsForward(tform, [lsr.bordersOutlineX, lsr.bordersOutlineY]);
+obj.bordersOutlineX = transformedpts(:,2);
+obj.bordersOutlineY = transformedpts(:,1);
+
 subplot(122)
 imagesc(im)
+hold on
+plot(transformedpts(:,1), transformedpts(:,2),'r.')
 title('Raw image')
 
 plot(rotpoints(:,1),rotpoints(:,2),'xw','linewidth',2);

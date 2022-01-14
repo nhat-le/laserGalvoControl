@@ -287,6 +287,13 @@ if get(obj.setgrid,'Value') == true
   axes(obj.camfig); % focus
   cla
   imagesc(obj.camData); colormap gray; axis image;
+  caxis([lsr.disp_min, lsr.disp_max]);
+  % allen borders
+    if ~isempty(lsr.borders) && get(obj.allen_toggle, 'Value')
+      plot(obj.bordersOutlineY,obj.bordersOutlineX,'r.')
+    end
+  
+  
   set(gca,'XDir','reverse','xtick',[],'ytick',[]);
   
   stopSelection = 0;
@@ -351,8 +358,9 @@ global obj lsr
 if get(obj.registerIm,'Value') == true
     thisdir = pwd;
     cd(lsr.savepath)
-    [fname, path] = uigetfile('*.tif','select image');
-    refImg = imread(fullfile(path, fname));
+%     [fname, path] = uigetfile('*.tif','select image');
+    refImg = imread(obj.imgpath);
+%     refImg = imread(fullfile(path, fname));
     cd(thisdir)
     lsr.currIm  = obj.camData; 
   
@@ -360,7 +368,14 @@ if get(obj.registerIm,'Value') == true
   set(obj.statusTxt,'String','performing Im regsitration...')
   drawnow()
   
-  obj.tform =  opto_img_align(refImg, obj.camData);
+  obj.tform =  opto_img_align(refImg', obj.camData);
+  
+  % Warp the border image
+%   w = images.geotrans.Warper(obj.tform, size(refImg));
+%   centerOutput = affineO
+    
+  
+  
 %   [regMsg,lsr.okFlag] = registerImage(lsr.refIm,lsr.currIm,false);
 %   wd = warndlg(regMsg,'Registration output');
 
@@ -478,7 +493,13 @@ files = dir(fullfile(templateDir, '*.mat'));
 assert(numel(files) == 1);
 load(fullfile(files(1).folder, files(1).name), 'borders', 'opts');
 lsr.borders = borders;
+% outline stored here is constant for each animal (reflecting the template
+% stored)
 [lsr.bordersOutlineX,lsr.bordersOutlineY] = find(borders==1); %TODO: do we need to transform?
+
+%outline stored here can change subject to alignment warp
+[obj.bordersOutlineX,obj.bordersOutlineY] = find(borders==1);
+
 obj.imgpath = opts.imgpath;
 
 epoch    = animalList.epochList{midx};
@@ -942,7 +963,7 @@ if get(obj.galvosweep,'Value') == true
     dataout(LaserRigParameters.lsrWaveCh)   = lsr.Vlsr;
     
     axes(obj.camfig);
-    for niter = 1:3
+    for niter = 1:2
         for i=1:size(lsr.grid, 1)
             gridpoint = lsr.grid(i,:);
             [Vx, Vy] = convertToGalvoVoltage(gridpoint, 'mm');

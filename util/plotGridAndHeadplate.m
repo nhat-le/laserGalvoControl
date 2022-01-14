@@ -18,9 +18,14 @@ cla
 set(gca,'XDir','normal', 'YDir','normal', 'xtick',[],'ytick',[]);
 
 imagesc(obj.camData); 
+hold on
+% allen borders
+if ~isempty(lsr.borders) && get(obj.allen_toggle, 'Value')
+  plot(obj.bordersOutlineY,obj.bordersOutlineX,'r.')
+end
+
 colormap gray; 
 axis image; 
-hold on
 view([90 -90])
 caxis([lsr.disp_min, lsr.disp_max]);
 set(gca,'XDir','reverse','xtick',[],'ytick',[]);
@@ -35,10 +40,7 @@ if ~isempty(lsr.headplateOutline) && get(obj.headplate_toggle, 'Value')
   plot(lsr.headplateOutlineX,lsr.headplateOutlineY,'y.')
 end
 
-% allen borders
-if ~isempty(lsr.borders) && get(obj.allen_toggle, 'Value')
-  plot(lsr.bordersOutlineX,lsr.bordersOutlineY,'r.')
-end
+
 
 %% galvo locations
 cl = {'y','b','r','c','g','m','w','k',[.2 .2 .2],[.4 .4 .4],[.6 .6 .6],[.8 .8 .8],...
