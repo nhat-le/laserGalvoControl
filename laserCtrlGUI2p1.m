@@ -257,7 +257,7 @@ function loadgrid(fn)
 global lsr obj
 
 load(fn,'grid','P_on')
-lsr.P_on        = P_on;
+% lsr.P_on        = P_on;
 lsr.grid        = grid;
 lsr.gridLabel   = fn;
 lsr.locationSet = [];
@@ -524,6 +524,8 @@ epochVal = find(strcmpi(lsr.epochList,epoch));
 if isfield(obj,'camData'); plotGridAndHeadplate(obj.camfig); end
 updateConsole(sprintf('Parameters for animal %s loaded', lsr.mouseID))
 
+obj.tform = [];
+
 % runOnLsr = animalList.runOnLsr(midx);
 % if runOnLsr
 %   thish = warndlg('Run this mouse on laser');
@@ -614,6 +616,20 @@ if ~isempty(lsr.clusterPoints)
         x             = (-activeSet(i,1) + lsr.refPxl(1))/lsr.pxlPerMM;
         y             = (-activeSet(i,2) + lsr.refPxl(2))/lsr.pxlPerMM;
         grid(end+1,:) = [x y];
+    end
+    
+    % apply transform if exists
+    if ~isempty(obj.tform)
+        grid_pixX = lsr.refPxl(1) - grid(:,1) * lsr.pxlPerMM;
+        grid_pixY = lsr.refPxl(2) - grid(:,2) * lsr.pxlPerMM;
+
+        grid_pix_trans = transformPointsForward(obj.tform, [grid_pixY, grid_pixX]);
+
+        grid_mmX_trans = (-grid_pix_trans(:,1) + lsr.refPxl(1)) / lsr.pxlPerMM;
+        grid_mmY_trans = (-grid_pix_trans(:,2) + lsr.refPxl(2)) / lsr.pxlPerMM;
+
+        grid = [grid_mmX_trans, grid_mmY_trans];
+        
     end
     
     % save new grid

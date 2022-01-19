@@ -15,6 +15,9 @@ imagesc(im);
 axis image
 view([90 -90])
 set(gca,'XDir','reverse','xtick',[],'ytick',[]);
+lowlim = prctile(im(:), 1);
+upperlim = prctile(im(:), 95);
+caxis([lowlim, upperlim]);
 
 colormap gray
 subplot(121)
@@ -42,6 +45,9 @@ imagesc(im);
 axis image
 view([90 -90])
 set(gca,'XDir','reverse','xtick',[],'ytick',[]);
+lowlim = prctile(im(:), 1);
+upperlim = prctile(im(:), 95);
+caxis([lowlim, upperlim]);
 
 hold on
 title('Select landmarks on the data, then press enter');
@@ -76,11 +82,15 @@ subplot(121)
 grid_pixX = lsr.refPxl(1) - lsr.grid(:,1) * lsr.pxlPerMM;
 grid_pixY = lsr.refPxl(2) - lsr.grid(:,2) * lsr.pxlPerMM;
 
-grid_pix_trans = transformPointsForward(tform, [grid_pixX, grid_pixY]);
+grid_pix_trans = transformPointsForward(tform, [grid_pixY, grid_pixX]);
 
 grid_mmX_trans = (-grid_pix_trans(:,1) + lsr.refPxl(1)) / lsr.pxlPerMM;
 grid_mmY_trans = (-grid_pix_trans(:,2) + lsr.refPxl(2)) / lsr.pxlPerMM;
 
 lsr.grid = [grid_mmX_trans, grid_mmY_trans];
+lsr.locationSet = num2cell(1:size(lsr.grid,1));
+lsr             = computeOuputData(lsr);
+
+
 axes(obj.camfig);
 end
