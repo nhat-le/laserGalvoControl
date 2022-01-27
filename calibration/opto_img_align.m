@@ -79,18 +79,20 @@ subplot(121)
 
 %% apply transform to grid
 %mm to pixel
-grid_pixX = lsr.refPxl(1) - lsr.grid(:,1) * lsr.pxlPerMM;
-grid_pixY = lsr.refPxl(2) - lsr.grid(:,2) * lsr.pxlPerMM;
+if ~isempty(lsr.grid)
+    grid_pixX = lsr.refPxl(1) - lsr.grid(:,1) * lsr.pxlPerMM;
+    grid_pixY = lsr.refPxl(2) - lsr.grid(:,2) * lsr.pxlPerMM;
 
-grid_pix_trans = transformPointsForward(tform, [grid_pixY, grid_pixX]);
+    grid_pix_trans = transformPointsForward(tform, [grid_pixY, grid_pixX]);
 
-grid_mmX_trans = (-grid_pix_trans(:,1) + lsr.refPxl(1)) / lsr.pxlPerMM;
-grid_mmY_trans = (-grid_pix_trans(:,2) + lsr.refPxl(2)) / lsr.pxlPerMM;
+    grid_mmX_trans = (-grid_pix_trans(:,1) + lsr.refPxl(1)) / lsr.pxlPerMM;
+    grid_mmY_trans = (-grid_pix_trans(:,2) + lsr.refPxl(2)) / lsr.pxlPerMM;
 
-lsr.grid = [grid_mmX_trans, grid_mmY_trans];
-lsr.locationSet = num2cell(1:size(lsr.grid,1));
-lsr             = computeOuputData(lsr);
-
+    lsr.grid = [grid_mmX_trans, grid_mmY_trans];
+    lsr.locationSet = num2cell(1:size(lsr.grid,1));
+    lsr             = computeOuputData(lsr);
+end
+close(gcf);
 
 axes(obj.camfig);
 end

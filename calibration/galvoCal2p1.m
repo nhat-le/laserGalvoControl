@@ -23,10 +23,10 @@ nidaqComm('init');
 % first save a copy of previous cal file (if any) by appending previous
 % date
 if ~isempty(dir(sprintf('%scalibration\\galvoCal.mat',lsr.rootdir)))
-    load(sprintf('%scalibration\\galvoCal.mat',lsr.rootdir),'calDate','tform')
+    load(sprintf('%scalibration\\galvoCal.mat',lsr.rootdir),'calDate')
     copyfile(sprintf('%scalibration\\galvoCal.mat',lsr.rootdir),...
         sprintf('%scalibration\\galvoCal_%s.mat',lsr.savepath,calDate), 'f')
-    clear caldate tform
+    clear calDate
 end
 
 % conversion pixels/mm
@@ -340,6 +340,9 @@ stdDy                  = std(dy);
 %% save
 save(sprintf('%scalibration\\galvoCal.mat',lsr.rootdir),'galvoCal','calDate')
 
+copyfile(sprintf('%scalibration\\galvoCal.mat',lsr.rootdir),...
+    sprintf('%scalibration\\galvoCal.mat',lsr.savepath), 'f')
+
 %% plot results
 
 % plot beam locations
@@ -434,3 +437,5 @@ end
 
 % park beam outside field of view
 nidaqAOPulse('aoPulse',[-5 -5 0 0]);
+
+close(h2);

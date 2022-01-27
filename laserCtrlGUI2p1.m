@@ -15,8 +15,8 @@ lsr     = calculateP_on(lsr); % enforce max prob./location
 lsr     = getCalValues(lsr); % get calibration parameters and quick-check laser power calibration
 [lsr.galvoManualVx,lsr.galvoManualVy] = convertToGalvoVoltage([lsr.ML lsr.AP],'mm'); % galvo voltage
 load(sprintf('%s\\grid\\fullGrid.mat',lsr.rootdir),'grid'); % load default grid
-lsr.grid        = grid;
-lsr.gridLabel   = 'fullGrid.mat';
+% lsr.grid        = grid;
+% lsr.gridLabel   = 'fullGrid.mat';
 lsr.locationSet = num2cell(1:size(lsr.grid,1));
 lsr             = computeOuputData(lsr); % compute laser/galvo data output
 lsr.fn          = sprintf('%s_%s',lsr.mouseID,datestr(datetime,'yyyymmdd_HHMMSS')); % default file name
@@ -496,7 +496,10 @@ varpower = animalList.varPower(midx);
 % Load template
 templateDir = animalList.templateDir{midx};
 files = dir(fullfile(templateDir, 'atlas*.mat'));
-assert(numel(files) == 1);
+if (numel(files) ~= 1)
+    errordlg('Invalid animal')
+    return
+end
 load(fullfile(files(1).folder, files(1).name), 'borders', 'opts');
 lsr.borders = borders;
 % outline stored here is constant for each animal (reflecting the template
@@ -531,6 +534,18 @@ if isfield(obj,'camData'); plotGridAndHeadplate(obj.camfig); end
 updateConsole(sprintf('Parameters for animal %s loaded', lsr.mouseID))
 
 obj.tform = [];
+
+% Load the laser calibration for the animal
+try
+    load(sprintf('%scalibration\\galvoCal.mat',lsr.savepath), 'galvoCal');
+    lsr.galvoTform = galvoCal.tform;
+    clear galvoCal
+catch e
+    if strcmp(e.identifier, 'MATLAB:load:couldNotReadFile')
+         warndlg('Warning: no galvo calibration file found')
+    end
+end
+
 
 % runOnLsr = animalList.runOnLsr(midx);
 % if runOnLsr
@@ -991,6 +1006,11 @@ end
 % galvos
 function galvocal_callback(~,event)
 global obj lsr
+if isempty(lsr.mouseID)
+    errordlg('Please select mouse ID')
+    return
+end
+
 if get(obj.galvocal,'Value') == true
   galvoCal2p1;
   figure(obj.fig)
