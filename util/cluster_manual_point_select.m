@@ -1,4 +1,5 @@
-load('C:\Users\MMM_3p1_SI\Documents\wftoolbox\templates\f29Template\atlas_f29.mat');
+animal = 'f32';
+load(sprintf('C:/Users/MMM_3p1_SI/Documents/wftoolbox/templates/%sTemplate/atlas_%s.mat', animal, animal));
 
 figure;
 imagesc(borders);
@@ -55,8 +56,15 @@ plot(visual_coords(:,1), visual_coords(:,2), 'yx')
 plot(rsc_coords(:,1), rsc_coords(:,2), 'gx')
 
 %%
-save('C:\Users\MMM_3p1_SI\Documents\wftoolbox\templates\f29Template\cluster_points.mat', 'motor_coords', 'visual_coords', 'frontal_coords', 'rsc_coords');
-save('C:\Users\MMM_3p1_SI\Documents\wftoolbox\templates\f26Template\cluster_points.mat', 'motor_coords', 'visual_coords', 'frontal_coords', 'rsc_coords');
-save('C:\Users\MMM_3p1_SI\Documents\wftoolbox\templates\f27Template\cluster_points.mat', 'motor_coords', 'visual_coords', 'frontal_coords', 'rsc_coords');
-save('C:\Users\MMM_3p1_SI\Documents\wftoolbox\templates\f32Template\cluster_points.mat', 'motor_coords', 'visual_coords', 'frontal_coords', 'rsc_coords');
+filename = sprintf('C:/Users/MMM_3p1_SI/Documents/wftoolbox/templates/%sTemplate/cluster_points.mat', animal);
+if ~exist(filename, 'file')
+    save(filename, ...
+        'motor_coords', 'visual_coords', 'frontal_coords', 'rsc_coords');
+    fprintf('File saved!\n')
+else
+    fprintf('File exists, skipping save\n');
+end
+% save('C:\Users\MMM_3p1_SI\Documents\wftoolbox\templates\f26Template\cluster_points.mat', 'motor_coords', 'visual_coords', 'frontal_coords', 'rsc_coords');
+% save('C:\Users\MMM_3p1_SI\Documents\wftoolbox\templates\f27Template\cluster_points.mat', 'motor_coords', 'visual_coords', 'frontal_coords', 'rsc_coords');
+% save('C:\Users\MMM_3p1_SI\Documents\wftoolbox\templates\f32Template\cluster_points.mat', 'motor_coords', 'visual_coords', 'frontal_coords', 'rsc_coords');
 

@@ -355,6 +355,12 @@ end
 function registerIm_callback(~,event)
 global obj lsr
 
+if isempty(lsr.mouseID)
+    errordlg('No mouse ID selected')
+    return;
+end
+
+
 if get(obj.registerIm,'Value') == true
     thisdir = pwd;
     cd(lsr.savepath)
@@ -687,6 +693,13 @@ updateConsole(sprintf('Allen toggled: %d', show_borders))
 
 end
 
+function galvosweepsave_callback(~,event)
+global obj
+savesweep = get(obj.galvosweepsave, 'Value');
+updateConsole(sprintf('Save sweep toggled: %d', savesweep))
+
+end
+
 function autoscale_callback(~,event)
 global obj lsr
 
@@ -991,31 +1004,10 @@ end
 function galvosweep_callback(~,event)
 global obj lsr
 
-% Sweep the 5x5 calibration grid
-% if get(obj.galvosweep,'Value') == true
-%   dataout = zeros(1,4);
-%   dataout(LaserRigParameters.lsrSwitchCh) = 5;
-%   dataout(LaserRigParameters.lsrWaveCh)   = lsr.Vlsr;
-%   GridSizeX    = 5;
-%   GridSizeY    = 5;
-%   VxMin        = -0.2; VxMax = 0.2;
-%   VyMin        = -0.2; VyMax = 0.2;
-%   for i=1:GridSizeX
-%     for j=1:GridSizeY
-%       Vx = (VxMax-VxMin)*(i-1)/(GridSizeX-1) + VxMin;
-%       Vy = (VyMax-VyMin)*(j-1)/(GridSizeY-1) + VyMin;
-%       
-%       dataout(LaserRigParameters.galvoCh(1)) = Vx;
-%       dataout(LaserRigParameters.galvoCh(2)) = Vy;
-%       
-%       nidaqAOPulse('aoPulse',dataout);
-%       delay(.2);
-%     end
-%   end
-%   dataout = zeros(1,4);
-%   nidaqAOPulse('aoPulse',dataout);
-% end
-
+savesweep = get(obj.galvosweepsave, 'Value');
+currdate = datetime;
+currdate.Format = 'yyyy-MM-dd';
+datestr = string(currdate);
 % Sweep the selected points
 if get(obj.galvosweep,'Value') == true
     dataout = zeros(1,4);
@@ -1023,7 +1015,7 @@ if get(obj.galvosweep,'Value') == true
     dataout(LaserRigParameters.lsrWaveCh)   = lsr.Vlsr;
     
     axes(obj.camfig);
-    for niter = 1:2
+    for niter = 1
         for i=1:size(lsr.grid, 1)
             gridpoint = lsr.grid(i,:);
             [Vx, Vy] = convertToGalvoVoltage(gridpoint, 'mm');
@@ -1042,6 +1034,22 @@ if get(obj.galvosweep,'Value') == true
             end
     %         pause(waitTime);
             obj.camData = dataRead(:,:,:,end);
+            
+            % Save if requested..
+            if savesweep
+                if isempty(lsr.mouseID)
+                    errordlg('Error: no mouse ID selected')
+                end
+                savepath = sprintf('%s%s_%s_galvosweep.tif',...
+                    lsr.savepath,lsr.mouseID,datestr);
+                if i == 1
+                    imwrite(obj.camData, savepath);
+                else
+                    imwrite(obj.camData, savepath,'WriteMode','append');
+                end
+                
+                
+            end
 
             % plot
             plotGridAndHeadplate(obj.camfig)
@@ -1705,16 +1713,26 @@ obj.galvosweep = uicontrol   (obj.calpan,                           ...
                         'fontsize',             13,                 ...
                         'horizontalAlignment',  'center',           ...
                         'fontweight',           'bold');
-obj.powercal = uicontrol   (obj.calpan,                             ...                              
-                        'String',               'Calibrate power',  ...
-                        'Style',                'pushbutton',       ...
+                    
+obj.galvosweepsave = uicontrol   (obj.calpan,                           ...
+                        'String',               'Save',      ...
+                        'Style',                'checkbox',       ...
                         'Units',                'normalized',       ...
-                        'Position',             [.5 .6 .35 .25],    ...
-                        'Callback',             @powercal_callback, ...
-                        'foregroundcolor',      'k',                ...
-                        'fontsize',             13,                 ...
-                        'horizontalAlignment',  'center',           ...
-                        'fontweight',           'bold');
+                        'Position',             [0.5,0.3,0.35,0.25],    ...
+                        'Callback',             @galvosweepsave_callback,...
+                        'fontsize',             10,                 ...
+                        'fontweight',           'normal');
+       
+% obj.powercal = uicontrol   (obj.calpan,                             ...                              
+%                         'String',               'Calibrate power',  ...
+%                         'Style',                'pushbutton',       ...
+%                         'Units',                'normalized',       ...
+%                         'Position',             [.5 .6 .35 .25],    ...
+%                         'Callback',             @powercal_callback, ...
+%                         'foregroundcolor',      'k',                ...
+%                         'fontsize',             13,                 ...
+%                         'horizontalAlignment',  'center',           ...
+%                         'fontweight',           'bold');
                     
                     
 % -----------------------------------------------

@@ -24,7 +24,7 @@ subplot(121)
 imagesc(ref);
 axis image
 view([90 -90])
-set(gca,'XDir','reverse','xtick',[],'ytick',[]);
+set(gca,'XDir','normal','YDir', 'normal', 'xtick',[],'ytick',[]);
 
 lowlim = prctile(ref(:), 1);
 upperlim = prctile(ref(:), 99);
